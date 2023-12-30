@@ -50,6 +50,8 @@ func (db *PostgresRepo) OneFact(id int) (*models.BCFact, error) {
 	
 
 }
+
+
 func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
@@ -125,4 +127,28 @@ func (db *PostgresRepo) AllFacts()([]*models.BCFact, error){
 	}
 
 	return facts, nil
+}
+
+
+func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	total := db.getFactCount()
+
+	stmt := `INSERT INTO facts (fact_id, fact_text) VALUES ($1, $2) RETURNING fact_id;`
+
+	var factID int
+	err := db.DB.QueryRowContext(ctx, stmt, total+1, fact).Scan(&factID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	retFact := &models.BCFact{
+		ID:   factID,
+		Fact: fact,
+	}
+
+	return retFact, nil
 }

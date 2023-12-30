@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cocacolasante/blockchainfacts/models"
 	"github.com/go-chi/chi/v5"
 )
 
-var JSONPayload struct {
+type JSONPayload struct {
 	ID   int    `json:"fact_id"`
-	Fact string `json:"fact"`
+	Fact string `json:"fact_text"`
 }
 
 func (app *Application) RandomFact(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +96,7 @@ func (app *Application) OneFact(w http.ResponseWriter, r *http.Request) {
 
 }
 func (app *Application) AllFacts(w http.ResponseWriter, r *http.Request) {
-	
+
 	facts, err := app.DB.AllFacts()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -126,3 +127,68 @@ func (app *Application) AllFacts(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
+	var readfact models.BCFact
+	app.ReadJSON(w, r, readfact)
+	if readfact.Fact == ""{
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Empty Fact",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+	fact, err := app.DB.AddFact(readfact.Fact)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Fact Id not in Database",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	out, err := json.Marshal(fact)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Error marshalling data",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(out)
+
+}

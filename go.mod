@@ -3,6 +3,7 @@ module github.com/cocacolasante/blockchainfacts
 go 1.21.4
 
 require (
+	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
