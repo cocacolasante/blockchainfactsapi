@@ -3,6 +3,7 @@ package postgresrepo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"math/rand"
 	"time"
@@ -20,13 +21,13 @@ func (db *PostgresRepo) Connection() *sql.DB {
 	return db.DB
 }
 
-func (db *PostgresRepo) OneFact() *models.BCFact {
+func (db *PostgresRepo) OneFact() (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
 	count := db.GetFactCount()
 	if count == 0 {
-		return nil 
+		return nil, errors.New("No Facts In Database")
 	}
 	
 	factNum := rand.Intn(count)
@@ -44,7 +45,7 @@ func (db *PostgresRepo) OneFact() *models.BCFact {
 		log.Fatal(err)
 	}
 
-	return fact
+	return fact, nil
 	
 	
 
