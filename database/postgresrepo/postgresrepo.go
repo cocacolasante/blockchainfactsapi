@@ -21,11 +21,11 @@ func (db *PostgresRepo) Connection() *sql.DB {
 	return db.DB
 }
 
-func (db *PostgresRepo) OneFact() (*models.BCFact, error) {
+func (db *PostgresRepo) OneFact(id int) (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	count := db.GetFactCount()
+	count := db.getFactCount()
 	if count == 0 {
 		return nil, errors.New("No Facts In Database")
 	}
@@ -37,7 +37,36 @@ func (db *PostgresRepo) OneFact() (*models.BCFact, error) {
 
 	stmt := `SELECT fact_id, fact_text FROM facts WHERE fact_id = $1;`
 
-	row := db.DB.QueryRowContext(ctx, stmt, 1)
+	row := db.DB.QueryRowContext(ctx, stmt, id)
+	
+	err := row.Scan(&fact.ID, &fact.Fact)
+	if err != nil {
+		log.Println("repo 1", err)
+		log.Fatal(err)
+	}
+
+	return fact, nil
+	
+	
+
+}
+func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	count := db.getFactCount()
+	if count == 0 {
+		return nil, errors.New("No Facts In Database")
+	}
+	
+	factNum := rand.Intn(count)
+	log.Println("fact num:", factNum)
+
+	fact := &models.BCFact{}
+
+	stmt := `SELECT fact_id, fact_text FROM facts WHERE fact_id = $1;`
+
+	row := db.DB.QueryRowContext(ctx, stmt, factNum)
 	
 	err := row.Scan(&fact.ID, &fact.Fact)
 	if err != nil {
@@ -51,7 +80,8 @@ func (db *PostgresRepo) OneFact() (*models.BCFact, error) {
 
 }
 
-func (db *PostgresRepo) GetFactCount() int {
+
+func (db *PostgresRepo) getFactCount() int {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
@@ -67,4 +97,32 @@ func (db *PostgresRepo) GetFactCount() int {
 
 	return totalCount
 
+}
+
+func (db *PostgresRepo) AllFacts()([]*models.BCFact, error){
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	var facts []*models.BCFact
+
+	stmt := `SELECT fact_id, fact_text FROM facts;`
+
+	row, err := db.DB.QueryContext(ctx, stmt)
+	if err != nil {
+		
+		return nil, err
+	}
+
+	defer row.Close()
+	for row.Next(){
+		var fact models.BCFact
+		err := row.Scan(&fact.ID, &fact.Fact)
+		if err !=nil {
+			return nil, err
+		}
+		facts = append(facts, &fact)
+
+	}
+
+	return facts, nil
 }
