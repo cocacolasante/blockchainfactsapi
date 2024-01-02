@@ -264,8 +264,8 @@ func (app *Application) DeleteFact(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	deleted, err := app.DB.DeleteFact(readfact.ID)
-	if err !=nil || !deleted {
+	err = app.DB.DeleteFact(readfact.ID)
+	if err !=nil  {
 		w.WriteHeader(http.StatusBadRequest)
 		var payload = struct {
 			HasError bool   `json:"has_error"`
