@@ -128,8 +128,31 @@ func (app *Application) AllFacts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
-	var readfact models.BCFact
-	app.ReadJSON(w, r, readfact)
+	var readfact *models.BCFact
+
+	
+	defer r.Body.Close()
+	
+	err := app.ReadJSONFromBody(r, &readfact)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
 	if readfact.Fact == ""{
 		w.WriteHeader(http.StatusBadRequest)
 		var payload = struct {
@@ -150,13 +173,14 @@ func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
 	}
 	fact, err := app.DB.AddFact(readfact.Fact)
 	if err != nil {
+		
 		w.WriteHeader(http.StatusBadRequest)
 		var payload = struct {
 			HasError bool   `json:"has_error"`
 			Error    string `json:"error_message"`
 		}{
 			HasError: true,
-			Error:    "Fact Id not in Database",
+			Error:    err.Error(),
 		}
 
 		out, err := json.Marshal(payload)

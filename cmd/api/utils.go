@@ -31,3 +31,18 @@ func (app *Application) ReadJSON(w http.ResponseWriter, r *http.Request, data in
 	return nil
 
 }
+
+func (app *Application) ReadJSONFromBody(r *http.Request, v interface{}) error {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, v)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
