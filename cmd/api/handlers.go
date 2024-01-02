@@ -181,7 +181,7 @@ func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
 			Error    string `json:"error_message"`
 		}{
 			HasError: true,
-			Error:    err.Error(),
+			Error:    "Here" + err.Error(),
 		}
 
 		out, err := json.Marshal(payload)
@@ -291,6 +291,115 @@ func (app *Application) DeleteFact(w http.ResponseWriter, r *http.Request){
 		Deleted: true,
 	}
 	out, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(out)
+}
+func (app *Application) UpdateFact(w http.ResponseWriter, r *http.Request){
+	var readfact *models.BCFact
+
+	
+	defer r.Body.Close()
+	
+	err := app.ReadJSONFromBody(r, &readfact)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+	
+
+	if readfact.ID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "No fact number selected",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+	if readfact.Fact == ""{
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Empty Fact",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	fact, err := app.DB.UpdateFact(readfact.Fact, readfact.ID)
+	if err !=nil  {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Fact was not updated " + err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+
+	out, err := json.Marshal(fact)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		var payload = struct {

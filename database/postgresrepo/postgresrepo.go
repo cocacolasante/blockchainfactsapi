@@ -41,7 +41,7 @@ func (db *PostgresRepo) OneFact(id int) (*models.BCFact, error) {
 	
 	err := row.Scan(&fact.ID, &fact.Fact)
 	if err != nil {
-		log.Println("repo 1", err)
+		
 		log.Fatal(err)
 	}
 
@@ -72,7 +72,7 @@ func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
 	
 	err := row.Scan(&fact.ID, &fact.Fact)
 	if err != nil {
-		log.Println("repo 1", err)
+		
 		log.Fatal(err)
 	}
 
@@ -134,14 +134,12 @@ func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	total := db.getFactCount()
-
-	stmt := `INSERT INTO facts (fact_id, fact_text) VALUES ($1, $2) RETURNING fact_id;`
+	stmt := `INSERT INTO facts (fact_text) VALUES ($1) RETURNING fact_id;`
 
 	var factID int
-	err := db.DB.QueryRowContext(ctx, stmt, total+1, fact).Scan(&factID)
+	err := db.DB.QueryRowContext(ctx, stmt, fact).Scan(&factID)
 	if err != nil {
-		log.Println(err)
+		
 		return nil, err
 	}
 
@@ -156,6 +154,7 @@ func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 func(db  *PostgresRepo) DeleteFact(factId int) (error){
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
+
 	stmt := `DELETE from facts where fact_id = $1;`
 
 	
@@ -174,4 +173,29 @@ func(db  *PostgresRepo) DeleteFact(factId int) (error){
 
 	return nil
 
+}
+
+func(db *PostgresRepo) UpdateFact(text string, id int) (*models.BCFact, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	stmt := `update facts set fact_text = $1 where fact_id = $2 RETURNING fact_id, fact_text;`
+	
+	result, err := db.DB.ExecContext(ctx, stmt, text, id)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected != 1 {
+		return nil, errors.New("incorrect amount of rows affected")
+	}
+
+	fact, err := db.OneFact(id)
+	if err != nil {
+		return nil, err
+	}
+	
+		
+	return fact, nil 
 }

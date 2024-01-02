@@ -19,6 +19,7 @@ func (app *Application) routes() http.Handler {
 	mux.Post("/addfact", app.AddFact)
 
 	mux.Delete("/deletefact", app.DeleteFact)
+	mux.Patch("/updatefact", app.UpdateFact)
 
 	return mux
 }
