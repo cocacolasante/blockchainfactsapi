@@ -127,6 +127,7 @@ func (app *Application) AllFacts(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
 func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
 	var readfact *models.BCFact
 
@@ -215,4 +216,101 @@ func (app *Application) AddFact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(out)
 
+}
+
+func (app *Application) DeleteFact(w http.ResponseWriter, r *http.Request){
+	var readfact *models.BCFact
+
+	
+	defer r.Body.Close()
+	
+	err := app.ReadJSONFromBody(r, &readfact)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+	
+
+	if readfact.ID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "No fact number selected",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	deleted, err := app.DB.DeleteFact(readfact.ID)
+	if err !=nil || !deleted {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    "Fact was not deleted",
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	var payload = struct {
+		Deleted bool `json:"deleted"`
+		
+	}{
+		Deleted: true,
+	}
+	out, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		var payload = struct {
+			HasError bool   `json:"has_error"`
+			Error    string `json:"error_message"`
+		}{
+			HasError: true,
+			Error:    err.Error(),
+		}
+
+		out, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("error marshalling json")
+			return
+		}
+		w.Write(out)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(out)
 }

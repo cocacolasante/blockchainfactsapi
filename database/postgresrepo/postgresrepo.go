@@ -152,3 +152,20 @@ func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 
 	return retFact, nil
 }
+
+func(db  *PostgresRepo) DeleteFact(factId int) (bool, error){
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `DELETE from facts where fact_id = $1;`
+
+	var factID int
+	log.Println(factID)
+	_, err := db.DB.ExecContext(ctx, stmt, factID)
+	if err != nil {
+		log.Println(err)
+		return false, err
+	}
+
+	return true, nil
+
+}
