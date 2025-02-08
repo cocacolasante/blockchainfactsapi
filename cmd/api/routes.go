@@ -12,6 +12,7 @@ func (app *Application) routes() http.Handler {
 
 	mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)
+	mux.Use(app.EnableCORS)
 
 	mux.Get("/randomfact", app.RandomFact)
 	mux.Get("/fact/{id}", app.OneFact)
