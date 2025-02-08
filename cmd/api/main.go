@@ -14,7 +14,7 @@ func main() {
 
 	var app Application
 
-	app.DSN = "host=66.179.189.129 port=5432 user=admin password=adminpass dbname=blockchainfacts sslmode=disable timezone=utc connect_timeout=5"
+	app.DSN = "host=localhost port=5432 user=postgres password=postgres dbname=blockchainfacts sslmode=disable timezone=utc connect_timeout=5"
 	app.Port = PORT
 	conn, err := app.ConnectToDb()
 	if err != nil {
