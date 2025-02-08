@@ -69,7 +69,7 @@ func (app *Application) CheckIfDBIsPopulated() (bool, error) {
 	}
 
 	
-
+	log.Println("Database is populated")
 	// If the count is > 0, we can safely say the DB is populated.
 	return false, nil
 }
