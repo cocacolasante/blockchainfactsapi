@@ -5,7 +5,7 @@ import "net/http"
 func (app *Application) EnableCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set the allowed origin
-		w.Header().Set("Access-Control-Allow-Origin", "74.208.205.28")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {
