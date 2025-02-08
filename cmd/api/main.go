@@ -18,13 +18,25 @@ func main() {
 	app.Port = PORT
 	conn, err := app.ConnectToDb()
 	if err != nil {
-		log.Println("main")
+		
 		log.Fatal(err)
 	}
-
+	defer conn.Close()
 	app.DB = &postgresrepo.PostgresRepo{DB: conn}
 
-	defer app.DB.Connection().Close()
+	// defer app.DB.Connection().Close()
+
+	pop, err := app.CheckIfDBIsPopulated()
+	if err != nil {
+		log.Println(err)
+	}
+
+	
+	if pop {
+		
+		app.createTable()
+		app.addData()
+	}
 
 	log.Println("Starting application on port:", app.Port)
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -29,7 +30,7 @@ func (db *PostgresRepo) OneFact(id int) (*models.BCFact, error) {
 	if count == 0 {
 		return nil, errors.New("No Facts In Database")
 	}
-	
+
 	factNum := rand.Intn(count)
 	log.Println("fact num:", factNum)
 
@@ -38,19 +39,16 @@ func (db *PostgresRepo) OneFact(id int) (*models.BCFact, error) {
 	stmt := `SELECT fact_id, fact_text FROM facts WHERE fact_id = $1;`
 
 	row := db.DB.QueryRowContext(ctx, stmt, id)
-	
+
 	err := row.Scan(&fact.ID, &fact.Fact)
 	if err != nil {
-		
+
 		log.Fatal(err)
 	}
 
 	return fact, nil
-	
-	
 
 }
-
 
 func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
@@ -60,7 +58,7 @@ func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
 	if count == 0 {
 		return nil, errors.New("No Facts In Database")
 	}
-	
+
 	factNum := rand.Intn(count)
 	log.Println("fact num:", factNum)
 
@@ -69,19 +67,16 @@ func (db *PostgresRepo) OneFactRandom() (*models.BCFact, error) {
 	stmt := `SELECT fact_id, fact_text FROM facts WHERE fact_id = $1;`
 
 	row := db.DB.QueryRowContext(ctx, stmt, factNum)
-	
+
 	err := row.Scan(&fact.ID, &fact.Fact)
 	if err != nil {
-		
+
 		log.Fatal(err)
 	}
 
 	return fact, nil
-	
-	
 
 }
-
 
 func (db *PostgresRepo) getFactCount() int {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
@@ -94,14 +89,14 @@ func (db *PostgresRepo) getFactCount() int {
 	if err != nil {
 		log.Println("repo 2", err)
 		log.Fatal("Cannot receive count:", err)
-		
+
 	}
 
 	return totalCount
 
 }
 
-func (db *PostgresRepo) AllFacts()([]*models.BCFact, error){
+func (db *PostgresRepo) AllFacts() ([]*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
@@ -111,15 +106,15 @@ func (db *PostgresRepo) AllFacts()([]*models.BCFact, error){
 
 	row, err := db.DB.QueryContext(ctx, stmt)
 	if err != nil {
-		
+
 		return nil, err
 	}
 
 	defer row.Close()
-	for row.Next(){
+	for row.Next() {
 		var fact models.BCFact
 		err := row.Scan(&fact.ID, &fact.Fact)
-		if err !=nil {
+		if err != nil {
 			return nil, err
 		}
 		facts = append(facts, &fact)
@@ -128,7 +123,6 @@ func (db *PostgresRepo) AllFacts()([]*models.BCFact, error){
 
 	return facts, nil
 }
-
 
 func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
@@ -139,7 +133,7 @@ func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 	var factID int
 	err := db.DB.QueryRowContext(ctx, stmt, fact).Scan(&factID)
 	if err != nil {
-		
+
 		return nil, err
 	}
 
@@ -151,36 +145,33 @@ func (db *PostgresRepo) AddFact(fact string) (*models.BCFact, error) {
 	return retFact, nil
 }
 
-func(db  *PostgresRepo) DeleteFact(factId int) (error){
+func (db *PostgresRepo) DeleteFact(factId int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
 	stmt := `DELETE from facts where fact_id = $1;`
 
-	
-	
 	sqlRes, err := db.DB.ExecContext(ctx, stmt, factId)
 
 	if err != nil {
-		
+
 		return err
 	}
 	rowsAffected, _ := sqlRes.RowsAffected()
 	if rowsAffected == 0 {
 		return errors.New("No records deleted")
 	}
-	
 
 	return nil
 
 }
 
-func(db *PostgresRepo) UpdateFact(text string, id int) (*models.BCFact, error) {
+func (db *PostgresRepo) UpdateFact(text string, id int) (*models.BCFact, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
 	stmt := `update facts set fact_text = $1 where fact_id = $2 RETURNING fact_id, fact_text;`
-	
+
 	result, err := db.DB.ExecContext(ctx, stmt, text, id)
 	if err != nil {
 		log.Println(err)
@@ -195,7 +186,36 @@ func(db *PostgresRepo) UpdateFact(text string, id int) (*models.BCFact, error) {
 	if err != nil {
 		return nil, err
 	}
-	
-		
-	return fact, nil 
+
+	return fact, nil
+}
+
+func (db *PostgresRepo) CreateTable() error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	log.Println("Creating Table In DB")
+	statement := `CREATE TABLE IF NOT EXISTS facts (
+		fact_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+		fact_text TEXT
+	);`
+	_, execErr := db.DB.ExecContext(ctx, statement)
+	if execErr != nil {
+		return fmt.Errorf("error executing statement (%s): %w", statement, execErr)
+	}
+
+	log.Println("executed and hit")
+	return nil
+}
+func (db *PostgresRepo) AddData() error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	_, execErr := db.DB.ExecContext(ctx, AddDataStatement)
+	if execErr != nil {
+		return fmt.Errorf("error executing statement (%s): %w", AddDataStatement, execErr)
+	}
+
+	log.Println("executed and hit")
+	return nil
 }
